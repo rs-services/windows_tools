@@ -33,7 +33,7 @@ write-output("`r`n*** RightLink version is:") | Out-File $File -append
 (Get-Command "${env:programfiles}\RightScale\RightLinkService\RightLinkService.exe").FileVersionInfo.ProductVersion  | Out-File $File -append
 
 write-output("`r`n*** Operationg System name and version:") | Out-File $File -append
-gwmi win32_operatingsystem | select Name,Version | Out-File $File -append 
+gwmi win32_operatingsystem | format-table -autosize Version,OsArchitecture,Name | Out-File $File -append 
 
 write-output("`r`n*** Ruby sandbox version:") | Out-File $File -append
 invoke-expression "& '$rightscale_path\SandBox\Ruby\bin\ruby.exe' -v" 2> $null | Out-File $File -append
@@ -54,7 +54,7 @@ elseif (Test-Path "C:\Documents and Settings\All Users\Application Data\RightSca
 }
 else
 {
-  write-output "*** Cannot find RightScaleService logs!!!!!!!!!!!!!!!!!!!" | Out-File $File -append
+  write-output "`r`n*** Cannot find RightScaleService logs!!!!!!!!!!!!!!!!!!!" | Out-File $File -append
 }
 
 if (Test-Path "C:\ProgramData\RightScale\log")
@@ -69,7 +69,7 @@ elseif (Test-Path "C:\Documents and Settings\All Users\Application Data\RightSca
 }
 else
 {
-  write-output "*** Cannot find RightScaleService logs!!!!!!!!!!!!!!!!!!!" | Out-File $File -append
+  write-output "`r`n*** Cannot find RightScaleService logs!!!!!!!!!!!!!!!!!!!" | Out-File $File -append
 }
 
 if (Test-Path "C:\ProgramData\RightScale\spool\cloud")
@@ -82,7 +82,7 @@ elseif (Test-Path "C:\Documents and Settings\All Users\Application Data\RightSca
 }
 else
 {
-  write-output "*** Cannot find user-data/meta-data directory!!!!!!!!!!!!!!!!!!!" | Out-File $File -append
+  write-output "`r`n*** Cannot find user-data/meta-data directory!!!!!!!!!!!!!!!!!!!" | Out-File $File -append
 }
 
 if ($cloud_dir)
@@ -94,6 +94,27 @@ if ($cloud_dir)
   cat user-data.dict | findstr /V RS_API_URL | findstr /V RS_TOKEN | findstr /V RS_RN_AUTH | Out-File $File -append
 }
 
+$ec2configlog_path="C:\Program Files\Amazon\Ec2ConfigService\Logs\ec2configlog.txt"
+if (Test-Path $ec2configlog_path)
+{
+  write-output("`r`n*** Adding the ec2configlog, skipping the 'Encrypted Password' line:") | Out-File $File -append
+  cat $ec2configlog_path | findstr /V "Encrypted Password" | Out-File $File -append
+}
+else
+{
+  write-output "`r`n*** Cannot find ec2configlog($ec2configlog_path)!!!!!!!!!!!!!!!!!!!" | Out-File $File -append
+}
+
+write-output("`r`n*** Adding the processes...") | Out-File $File -append
+gwmi win32_process | format-table -autosize name,processId,commandLine | Out-File $File -append -width 1000
+
+write-output("`r`n*** Adding RightScale EventLogs...") | Out-File $File -append
+Get-EventLog RightScale | select-object Index,Source,EntryType,TimeGenerated,Message | Sort-Object -property TimeGenerated | Out-File $File -append 
+
+
 cd "$original_path"
 
-Write-Output "*** Troubleshooting log deployed to:`n`t$File"
+#remove padding
+(get-content -path $File) -replace "                        ","" | set-content $File
+
+Write-Output "*** Troubleshooting log deployed to:`r`n`t$File"
