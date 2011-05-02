@@ -126,4 +126,8 @@ cd "$original_path"
 #remove padding
 (get-content -path $File) -replace "                        ","" | set-content $File
 
+#mask instances token
+(get-content -path $File) -replace "-t \w+","-t ***MASKED***" | set-content $File
+
+
 Write-Output "*** Troubleshooting log deployed to:`r`n`t$File"
