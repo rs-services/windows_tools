@@ -3,12 +3,21 @@
 #PS C:\> Set-ExecutionPolicy RemoteSigned -force
 
 $timestamp = Get-Date -format yyyy-MM-dd_HH-mm-ss
-
 $File ="C:\rs-win-troubleshooting_$timestamp.txt"
-
 $original_path=invoke-expression 'get-location'
 
-write-output("*** Using troubleshoot script v1.1") | Out-File $File
+function cat_files_in_dir([string]$dir)
+{
+  Write-Output("`r`n*** Cat the following files:")
+  ls $dir
+  foreach($file in Get-ChildItem -force $dir | Where-Object { !($_.Attributes -match "Directory") } | Select-Object FullName)
+  {
+    Write-Output("`r`n*** Content of [{0}] is:" -f $file.FullName)
+    cat $file.FullName
+  }
+}
+
+write-output("*** Using troubleshoot script v1.2") | Out-File $File
 
 write-output("`r`n*** Get RightLink service status:") | Out-File $File -append
 get-service *RightLink 2>$null | Out-File $File -append
@@ -45,31 +54,31 @@ invoke-expression "& '$rightscale_path\SandBox\Ruby\bin\gem.bat' list --local" 2
 if (Test-Path "C:\ProgramData\RightScale\RightScaleService\log")
 {
   write-output("`r`n*** Adding 2008 RightScaleService logs:") | Out-File $File -append	
-  cat "C:\ProgramData\RightScale\RightScaleService\log\*" | Out-File $File -append
+  cat_files_in_dir('C:\ProgramData\RightScale\RightScaleService\log\') | Out-File $File -append
 }
 elseif (Test-Path "C:\Documents and Settings\All Users\Application Data\RightScale\RightScaleService\log")
 {
   write-output("`r`n*** Adding 2003 RightScaleService logs:") | Out-File $File -append	
-  cat "C:\Documents and Settings\All Users\Application Data\RightScale\RightScaleService\log\*" | Out-File $File -append
+  cat_files_in_dir('C:\Documents and Settings\All Users\Application Data\RightScale\RightScaleService\log\') | Out-File $File -append
 }
 else
 {
-  write-output "`r`n*** Cannot find RightScaleService logs!!!!!!!!!!!!!!!!!!!" | Out-File $File -append
+  write-output "`r`n*** Cannot find RightScaleService log directory!!!!!!!!!!!!!!!!!!!" | Out-File $File -append
 }
 
 if (Test-Path "C:\ProgramData\RightScale\log")
 {
   write-output("`r`n*** Adding 2008 RightScale logs:") | Out-File $File -append
-  cat "C:\ProgramData\RightScale\log\*" | Out-File $File -append
+  cat_files_in_dir('C:\ProgramData\RightScale\log\') | Out-File $File -append
 }
 elseif (Test-Path "C:\Documents and Settings\All Users\Application Data\RightScale\log")
 {
   write-output("`r`n*** Adding 2003 RightScale logs:") | Out-File $File -append
-  cat "C:\Documents and Settings\All Users\Application Data\RightScale\log\*" | Out-File $File -append
+  cat_files_in_dir('C:\Documents and Settings\All Users\Application Data\RightScale\log\') | Out-File $File -append
 }
 else
 {
-  write-output "`r`n*** Cannot find RightScaleService logs!!!!!!!!!!!!!!!!!!!" | Out-File $File -append
+  write-output "`r`n*** Cannot find RightScale log directory!!!!!!!!!!!!!!!!!!!" | Out-File $File -append
 }
 
 if (Test-Path "C:\ProgramData\RightScale\spool\cloud")
@@ -102,7 +111,7 @@ if (Test-Path $ec2configlog_path)
 }
 else
 {
-  write-output "`r`n*** Cannot find ec2configlog($ec2configlog_path)!!!!!!!!!!!!!!!!!!!" | Out-File $File -append
+  write-output "`r`n*** Ec2configlog($ec2configlog_path) missing!" | Out-File $File -append
 }
 
 write-output("`r`n*** Adding the processes...") | Out-File $File -append
