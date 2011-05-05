@@ -25,7 +25,7 @@ write-output("`r`n### Get RightLink service status: ############################
 get-service *RightLink 2>$null
 
 write-output("`r`n### Get the server timezone setting: #########################################################")
-get-itemproperty -path "HKLM:\SYSTEM\CurrentControlSet\Control\TimeZoneInformation" | Select-Object "TimeZoneKeyName"
+(gwmi Win32_TimeZone).Caption
 
 write-output("`r`n### Resolve the RightScale brokers: #########################################################")
 nslookup broker1-1.rightscale.com 2>$null
