@@ -19,13 +19,16 @@ function rs_troubleshoot()
 $original_path=invoke-expression 'get-location'
 $errorActionPreference = "Continue"
 
-write-output("### Using troubleshoot script v1.3 #########################################################")
+write-output("### Using troubleshoot script v1.4 #########################################################")
 
 write-output("`r`n### Get RightLink service status: #########################################################")
 get-service *RightLink 2>$null
 
-write-output("`r`n### Get the server timezone setting: #########################################################")
+write-output("`r`n### Timezone setting: #########################################################")
 (gwmi Win32_TimeZone).Caption
+
+write-output("`r`n### NTP registry setting: #########################################################")
+get-itemproperty -path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DateTime\Servers"
 
 write-output("`r`n### Resolve the RightScale brokers: #########################################################")
 nslookup broker1-1.rightscale.com 2>$null
