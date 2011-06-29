@@ -19,7 +19,7 @@ function rs_troubleshoot()
 $original_path=invoke-expression 'get-location'
 $errorActionPreference = "Continue"
 
-write-output("### Using troubleshoot script v1.4 #########################################################")
+write-output("### Using troubleshoot script v1.5 #########################################################")
 
 write-output("`r`n### Get RightLink service status: #########################################################")
 get-service *RightLink 2>$null
@@ -130,9 +130,12 @@ cd "$original_path"
 
 #generate a log file with timestamp
 $log_file ="C:\rs-win-troubleshooting_$(Get-Date -format yyyy-MM-dd_HH-mm-ss).txt"
+Write-Output("`r`n### Writing troubleshooting log to: $log_file")
+Write-Output("### Please wait...")
+
 rs_troubleshoot | out-file $log_file
 
 #mask instances token/credentials
 (get-content -path $log_file) -replace "-(t|u|p) \w+","-`${1} ***MASKED***" | set-content $log_file
 
-Write-Output("### Troubleshooting log deployed to: $log_file`r`n")
+Write-Output("### Done.`r`n")
