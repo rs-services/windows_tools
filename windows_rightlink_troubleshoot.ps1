@@ -19,7 +19,7 @@ function rs_troubleshoot()
 $original_path=invoke-expression 'get-location'
 $errorActionPreference = "Continue"
 
-write-output("### Using troubleshoot script v1.5 #########################################################")
+write-output("### Using troubleshoot script v1.6 #########################################################")
 
 write-output("`r`n### Get RightLink service status: #########################################################")
 get-service *RightLink 2>$null
@@ -31,10 +31,21 @@ write-output("`r`n### NTP registry setting: ####################################
 get-itemproperty -path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DateTime\Servers"
 
 write-output("`r`n### Resolve the RightScale brokers: #########################################################")
-nslookup broker1-1.rightscale.com 2>$null
-nslookup broker1-2.rightscale.com 2>$null
+nslookup broker1-1.rightscale.com
+nslookup broker1-2.rightscale.com
+
+write-output("`r`n### Testing TCP connection to google.com: #########################################################")
+new-object System.Net.Sockets.TcpClient("google.com", 80)
+
+write-output("`r`n### Testing TCP connection to broker1-1.rightscale.com: #########################################################")
+new-object System.Net.Sockets.TcpClient("broker1-1.rightscale.com", 5672)
 
 write-output("`r`n### Date is: "+(invoke-expression 'date 2> $null')+" #########################################################`r`n")
+
+write-output("`r`n### Testing rs_tag tool: #########################################################")
+rs_tag --add troubleshooting:tag=test
+rs_tag --list
+rs_tag --remove troubleshooting:tag=test
 
 #check to see if the package is already installed
 if (Test-Path (${env:programfiles(x86)}+"\RightScale")) { 
