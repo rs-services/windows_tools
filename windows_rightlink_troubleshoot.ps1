@@ -97,6 +97,12 @@ else
   write-output("`r`n### Cannot find RightScale log directory!!! #########################################################")
 }
 
+if (Test-Path "C:\Windows\Temp\RightScale")
+{
+  write-output("`r`n### Adding logs from C:\Windows\Temp\RightScale #########################################################")
+  cat_files_in_dir('C:\Windows\Temp\RightScale\')
+}
+
 if (Test-Path "C:\ProgramData\RightScale\spool\cloud")
 {
   $cloud_dir="C:\ProgramData\RightScale\spool\cloud"
