@@ -19,7 +19,7 @@ function rs_troubleshoot()
 $original_path=invoke-expression 'get-location'
 $errorActionPreference = "Continue"
 
-write-output("### Using troubleshoot script v1.6 #########################################################")
+write-output("### Using troubleshoot script v1.7 #########################################################")
 
 write-output("`r`n### Get RightLink service status: #########################################################")
 get-service *RightLink 2>$null
@@ -29,10 +29,6 @@ write-output("`r`n### Timezone setting: ########################################
 
 write-output("`r`n### NTP registry setting: #########################################################")
 get-itemproperty -path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DateTime\Servers"
-
-write-output("`r`n### Resolve the RightScale brokers: #########################################################")
-nslookup broker1-1.rightscale.com
-nslookup broker1-2.rightscale.com
 
 write-output("`r`n### Testing TCP connection to google.com: #########################################################")
 new-object System.Net.Sockets.TcpClient("google.com", 80)
@@ -48,10 +44,14 @@ rs_tag --list
 rs_tag --remove troubleshooting:tag=test
 
 #check to see if the package is already installed
-if (Test-Path (${env:programfiles(x86)}+"\RightScale")) { 
-  $rightscale_path = ${env:programfiles(x86)}+"\RightScale" 
-} Elseif (Test-Path (${env:programfiles}+"\RightScale")) { 
-  $rightscale_path = ${env:programfiles}+"\RightScale" 
+if (Test-Path (${env:programfiles(x86)}+"\RightScale\SandBox\Ruby")) { 
+  $rightscale_sandbox_path = ${env:programfiles(x86)}+"\RightScale\SandBox"
+} elseif (Test-Path (${env:programfiles}+"\RightScale\SandBox\Ruby")) { 
+  $rightscale_sandbox_path = ${env:programfiles}+"\RightScale\SandBox"
+} elseif (Test-Path (${env:programfiles(x86)}+"\RightScale\RightLink\SandBox\Ruby")) {
+  $rightscale_sandbox_path = ${env:programfiles(x86)}+"\RightScale\RightLink\SandBox"
+} elseif (Test-Path (${env:programfiles}+"\RightScale\RightLink\SandBox\Ruby")) {
+  $rightscale_sandbox_path = ${env:programfiles}+"\RightScale\RightLink\SandBox"
 }
 
 write-output("`r`n### RightLink version is: #########################################################")
@@ -61,15 +61,16 @@ write-output("`r`n### Operationg System name and version: ######################
 gwmi win32_operatingsystem | format-table -autosize Version,OsArchitecture,Name | out-string
 
 write-output("`r`n### Ruby sandbox version: #########################################################")
-invoke-expression "& '$rightscale_path\SandBox\Ruby\bin\ruby.exe' -v" 2> $null
+invoke-expression "& '$rightscale_sandbox_path\Ruby\bin\ruby.exe' -v" 2> $null
 
-cd "$rightscale_path\SandBox\Ruby\bin"
+cd "$rightscale_sandbox_path\Ruby\bin"
 write-output("`r`n### Ruby sandbox gems: #########################################################")
-invoke-expression "& '$rightscale_path\SandBox\Ruby\bin\gem.bat' list --local" 2> $null
+invoke-expression "& '$rightscale_sandbox_path\Ruby\bin\gem.bat' list --local" 2> $null
 
+  
 if (Test-Path "C:\ProgramData\RightScale\RightScaleService\log")
 {
-  write-output("`r`n### Adding 2008 RightScaleService logs: #########################################################")	
+  write-output("`r`n### Adding 2008 RightScaleService logs: #########################################################")  
   cat_files_in_dir('C:\ProgramData\RightScale\RightScaleService\log\')
 }
 elseif (Test-Path "C:\Documents and Settings\All Users\Application Data\RightScale\RightScaleService\log")
@@ -142,17 +143,20 @@ gwmi win32_process | format-table -autosize name,processId,commandLine | Out-Str
 write-output("`r`n### Adding RightScale EventLogs... #########################################################")
 Get-EventLog RightScale | select-object Index,Source,EntryType,TimeGenerated,Message | Sort-Object -property TimeGenerated | Out-String -width 1000 | Foreach-Object {$_ -replace "                        ",""}
 
+write-output("`r`n### Resolve the RightScale brokers: #########################################################")
+nslookup broker1-1.rightscale.com
+nslookup broker1-2.rightscale.com
+
 cd "$original_path"
 }
 
 #generate a log file with timestamp
 $log_file ="C:\rs-win-troubleshooting_$(Get-Date -format yyyy-MM-dd_HH-mm-ss).txt"
-Write-Output("`r`n### Writing troubleshooting log to: $log_file")
 Write-Output("### Please wait...")
 
-rs_troubleshoot | out-file $log_file
+rs_troubleshoot 2>&1 | out-file $log_file
 
 #mask instances token/credentials
 (get-content -path $log_file) -replace "-(t|u|p) \w+","-`${1} ***MASKED***" | set-content $log_file
 
-Write-Output("### Done.`r`n")
+Write-Output("### Done, troubleshooting output saved to: $log_file `r`n")
